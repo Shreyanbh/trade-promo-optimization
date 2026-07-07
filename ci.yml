@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-and-syntax:
+    name: Syntax & Import Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install base dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check syntax (all Python files)
+        run: |
+          python -m py_compile $(find src dashboard -name "*.py" | tr '\n' ' ')
+          echo "All files pass syntax check"
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          # stop on critical errors (syntax, undefined names), warn on style
+          flake8 src dashboard \
+            --max-line-length=120 \
+            --select=E9,F63,F7,F82 \
+            --count
+        continue-on-error: false
+
+      - name: Validate config.yaml
+        run: |
+          python -c "
+          import yaml, sys
+          with open('config.yaml') as f:
+              data = yaml.safe_load(f)
+          assert 'storage' in data, 'Missing storage section'
+          assert 'compute' in data, 'Missing compute section'
+          assert 'llm' in data,     'Missing llm section'
+          print('config.yaml OK')
+          "
+
+      - name: Validate sources.yaml
+        run: |
+          python -c "
+          import yaml, sys
+          with open('sources.yaml') as f:
+              data = yaml.safe_load(f)
+          assert 'sources' in data, 'Missing sources key'
+          print(f'sources.yaml OK — {len(data[\"sources\"])} source(s) defined')
+          "
+
+      - name: Security — scan for hardcoded secrets
+        run: |
+          pip install detect-secrets
+          detect-secrets scan \
+            --exclude-files '\.env\.example' \
+            --exclude-files '.*\.gitignore' \
+            --exclude-files 'src/security/validators\.py' \
+            src/ dashboard/ config.yaml sources.yaml requirements*.txt Dockerfile
+        continue-on-error: true   # advisory — doesn't block merge
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image (no push)
+        run: |
+          docker build \
+            --build-arg CLOUD_EXTRAS="" \
+            -t tpo-tool:ci-check \
+            --no-cache \
+            .
+
+  security-check:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Scan dependencies with pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --ignore-vuln GHSA-w596-4wvx-j9j6 || true
+        continue-on-error: true   # advisory scan, doesn't block merge

@@ -1,0 +1,104 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Trade Promo Optimization — Central Configuration
+# Values can reference environment variables with ${VAR_NAME} syntax.
+# Copy this file and set your provider sections; leave unused providers as-is.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Storage provider ─────────────────────────────────────────────────────────
+# Options: local | s3 | azure | gcs
+storage:
+  provider: local
+
+  local:
+    base_path: ./data          # relative to project root
+
+  s3:
+    bucket: ${S3_BUCKET}
+    prefix: tpo/               # all keys written under this prefix
+    region: ${AWS_REGION:-us-east-1}
+    profile: ${AWS_PROFILE:-}  # leave blank to use instance role / env creds
+
+  azure:
+    account_name: ${AZURE_STORAGE_ACCOUNT}
+    container: ${AZURE_CONTAINER:-tpo-data}
+    prefix: tpo/
+    # credential: leave blank → DefaultAzureCredential (managed identity / az login)
+    # set to a SAS token or connection string to override
+    credential: ${AZURE_STORAGE_CREDENTIAL:-}
+
+  gcs:
+    bucket: ${GCS_BUCKET}
+    prefix: tpo/
+    project: ${GCP_PROJECT:-}
+
+# ── Compute (PySpark) provider ────────────────────────────────────────────────
+# Options: local | databricks | emr | dataproc
+compute:
+  provider: local
+
+  local:
+    driver_memory: 4g
+    executor_memory: 4g
+    shuffle_partitions: 50
+    parallelism: 8
+
+  databricks:
+    host: ${DATABRICKS_HOST}                  # e.g. https://adb-xxxx.azuredatabricks.net
+    token: ${DATABRICKS_TOKEN}
+    cluster_id: ${DATABRICKS_CLUSTER_ID}      # existing interactive cluster
+    # OR use a job cluster spec — leave cluster_id blank and fill below
+    # node_type_id: Standard_DS3_v2
+    # num_workers: 4
+
+  emr:
+    master_url: ${EMR_MASTER_URL}             # spark://ip-x-x-x-x.ec2.internal:7077
+    # OR set to "yarn" when running inside the EMR cluster
+    app_name: TradePromoOptimization
+
+  dataproc:
+    master_url: ${DATAPROC_MASTER_URL}        # spark://dataproc-master:7077
+    project_id: ${GCP_PROJECT}
+    region: ${GCP_REGION:-us-central1}
+    cluster_name: ${DATAPROC_CLUSTER}
+
+# ── LLM provider ──────────────────────────────────────────────────────────────
+# Options: anthropic | bedrock | azure
+llm:
+  provider: anthropic
+  max_tokens: 2048
+
+  anthropic:
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-sonnet-4-6
+
+  bedrock:
+    region: ${AWS_REGION:-us-east-1}
+    # Anthropic Claude on Bedrock — check AWS console for available model IDs
+    model_id: anthropic.claude-3-5-sonnet-20241022-v2:0
+    # Credentials: uses boto3 default chain (env vars / instance role / ~/.aws)
+
+  azure:
+    endpoint: ${AZURE_OPENAI_ENDPOINT}        # https://my-resource.openai.azure.com/
+    api_key: ${AZURE_OPENAI_KEY}
+    deployment: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
+    api_version: "2024-02-01"
+
+# ── Pipeline behaviour ────────────────────────────────────────────────────────
+pipeline:
+  # When using synthetic data (no upload), how many rows to generate
+  n_customers: 5_000_000
+  n_transactions: 25_000_000
+  # Sample size handed to sklearn / implicit ALS (must fit in driver RAM)
+  ml_sample_size: 200_000
+  # Max KMeans clusters the CEO gate allows
+  max_segments: 6
+  random_seed: 42
+
+# ── Output paths (relative to storage base or cloud prefix) ──────────────────
+paths:
+  raw: raw
+  staging: staging
+  processed: processed
+  models: models
+  reports: reports
+  uploads: uploads       # where user-uploaded files land before processing

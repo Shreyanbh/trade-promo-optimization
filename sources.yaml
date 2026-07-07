@@ -1,0 +1,177 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Trade Promo Optimization — Source Registry
+#
+# Define every data source your organisation uses here.
+# The loader consolidates all sources into the four pipeline tables:
+#   customers | transactions | products | promotions
+#
+# Supported source types:  file | database | api
+# Supported file formats:  csv | parquet | excel | json | xml | avro | delta
+# Supported databases:     postgresql | mysql | sqlite | snowflake | bigquery
+#                          redshift | mssql (anything with a SQLAlchemy driver)
+# Supported APIs:          any REST API with page / offset / cursor / link pagination
+#
+# Values support ${ENV_VAR} and ${ENV_VAR:-default} substitution.
+# ─────────────────────────────────────────────────────────────────────────────
+
+sources:
+
+  # ── EXAMPLE 1: Local CSV files ────────────────────────────────────────────
+  - name: local_customers
+    type: file
+    path: data/raw/structured/customers        # directory or exact file
+    format: parquet                             # csv | parquet | excel | json | xml | avro | delta
+    maps_to: customers
+    # column_map is optional — auto-detected if omitted
+    column_map: {}
+
+  - name: local_transactions
+    type: file
+    path: data/raw/structured/transactions
+    format: parquet
+    maps_to: transactions
+    column_map: {}
+
+  - name: local_products
+    type: file
+    path: data/raw/structured/products.xlsx
+    format: excel
+    sheet_name: Products
+    maps_to: products
+    column_map: {}
+
+  - name: local_promotions
+    type: file
+    path: data/raw/structured/promotions.json
+    format: json
+    maps_to: promotions
+    column_map: {}
+
+
+  # ── EXAMPLE 2: Multiple glob-matched files ────────────────────────────────
+  # - name: regional_sales_files
+  #   type: file
+  #   path: data/sales/2024_Q*.parquet          # glob — all matching files are unioned
+  #   format: parquet
+  #   maps_to: transactions
+  #   column_map:
+  #     SALES_ORDER_ID:  transaction_id
+  #     ACCT_NUMBER:     customer_id
+  #     SKU:             product_id
+  #     INVOICE_DATE:    date
+  #     NET_AMOUNT:      amount
+  #     CHANNEL_CODE:    channel
+
+
+  # ── EXAMPLE 3: PostgreSQL / Redshift / MySQL ──────────────────────────────
+  # - name: erp_transactions
+  #   type: database
+  #   connection: postgresql://analyst:${DB_PASSWORD}@db.internal:5432/erp
+  #   query: >
+  #     SELECT order_id, customer_id, product_code, order_date,
+  #            net_revenue, sales_channel, promo_applied
+  #     FROM   fact_sales
+  #     WHERE  order_date >= '2023-01-01'
+  #   maps_to: transactions
+  #   column_map:
+  #     order_id:       transaction_id
+  #     product_code:   product_id
+  #     order_date:     date
+  #     net_revenue:    amount
+  #     sales_channel:  channel
+  #     promo_applied:  promo_code
+
+
+  # ── EXAMPLE 4: Snowflake ──────────────────────────────────────────────────
+  # - name: snowflake_customers
+  #   type: database
+  #   connection: snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_ACCOUNT}/PROD_DB/PUBLIC
+  #   query: SELECT * FROM DIM_CUSTOMER WHERE IS_ACTIVE = TRUE
+  #   maps_to: customers
+  #   column_map:
+  #     CUSTOMER_KEY:    customer_id
+  #     SALES_TERRITORY: region
+  #     BIRTH_YEAR:      age
+  #     LOYALTY_STATUS:  loyalty_tier
+
+
+  # ── EXAMPLE 5: BigQuery ───────────────────────────────────────────────────
+  # - name: bigquery_transactions
+  #   type: database
+  #   connection: bigquery://${GCP_PROJECT}/analytics
+  #   query: >
+  #     SELECT transaction_id, customer_id, product_id, DATE(created_at) as date,
+  #            amount, channel
+  #     FROM   `analytics.transactions`
+  #     WHERE  DATE(created_at) >= '2024-01-01'
+  #   maps_to: transactions
+  #   column_map: {}                            # column names already match
+
+
+  # ── EXAMPLE 6: REST API ───────────────────────────────────────────────────
+  # - name: product_catalog_api
+  #   type: api
+  #   url: https://api.company.com/v2/products
+  #   method: GET
+  #   headers:
+  #     Authorization: Bearer ${PRODUCT_API_TOKEN}
+  #     Accept: application/json
+  #   pagination:
+  #     type: page                              # page | offset | cursor | link | none
+  #     page_param: page
+  #     size_param: per_page
+  #     size: 200
+  #     max_pages: 50
+  #   data_path: data.products                 # dot-path into response JSON
+  #   maps_to: products
+  #   column_map:
+  #     sku:          product_id
+  #     display_name: product_name
+  #     division:     category
+  #     retail_price: price
+
+
+  # ── EXAMPLE 7: S3 files ───────────────────────────────────────────────────
+  # - name: s3_promo_calendar
+  #   type: file
+  #   path: s3://${S3_BUCKET}/promo/calendar/*.csv
+  #   format: csv
+  #   maps_to: promotions
+  #   column_map:
+  #     PromoID:      promo_id
+  #     ItemSKU:      product_id
+  #     DiscountRate: discount_pct
+  #     StartDt:      start_date
+  #     EndDt:        end_date
+  #     MechanicType: promo_type
+
+
+  # ── EXAMPLE 8: Azure ADLS Gen2 ───────────────────────────────────────────
+  # - name: adls_customer_master
+  #   type: file
+  #   path: abfs://${AZURE_CONTAINER}@${AZURE_STORAGE_ACCOUNT}.dfs.core.windows.net/crm/customers.parquet
+  #   format: parquet
+  #   maps_to: customers
+  #   column_map:
+  #     CustID:      customer_id
+  #     Region:      region
+
+
+  # ── EXAMPLE 9: Multiple sources for the same table (auto-unioned) ─────────
+  # sources that share the same maps_to value are UNIONED after column mapping.
+  # - name: online_transactions
+  #   type: file
+  #   path: data/online/txns_*.parquet
+  #   maps_to: transactions
+  #   column_map:
+  #     order_uuid: transaction_id
+  #     buyer_id:   customer_id
+  #
+  # - name: instore_transactions
+  #   type: database
+  #   connection: sqlite:///data/pos/instore.db
+  #   query: SELECT * FROM pos_receipts
+  #   maps_to: transactions
+  #   column_map:
+  #     receipt_no: transaction_id
+  #     loyalty_id: customer_id

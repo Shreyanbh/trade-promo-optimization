@@ -1,0 +1,73 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+*.egg
+
+# ── Secrets — NEVER commit these ─────────────────────────────────────────────
+.env
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+service_account*.json
+*credentials*.json
+.streamlit/secrets.toml
+
+# ── User-uploaded data (may contain PII) ─────────────────────────────────────
+data/raw/
+data/processed/
+data/external/
+data/uploads/
+data/staging/
+
+# ── Generated outputs (large, reproducible) ──────────────────────────────────
+outputs/models/
+outputs/reports/
+outputs/visualizations/
+
+# ── Large binary data files ───────────────────────────────────────────────────
+*.parquet
+*.joblib
+*.pkl
+*.h5
+*.hdf5
+*.avro
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Streamlit ─────────────────────────────────────────────────────────────────
+.streamlit/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+security_audit.jsonl
+
+# ── Java (PySpark) ────────────────────────────────────────────────────────────
+*.class
+derby.log
+metastore_db/
+spark-warehouse/

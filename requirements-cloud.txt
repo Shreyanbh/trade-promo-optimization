@@ -1,0 +1,27 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Optional cloud provider dependencies
+# Install only what you need for your target environment.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Config loader (required for config.yaml support)
+pyyaml>=6.0.0
+
+# ── AWS / S3 / EMR / Bedrock ──────────────────────────────────────────────────
+boto3>=1.34.0            # S3 storage + Bedrock LLM + EMR
+s3fs>=2024.2.0           # Parquet over S3 (optional, boto3 fallback available)
+
+# ── Azure / ADLS / Azure OpenAI ───────────────────────────────────────────────
+azure-storage-file-datalake>=12.14.0   # Azure ADLS Gen2 storage
+azure-identity>=1.16.0                 # DefaultAzureCredential (managed identity)
+openai>=1.14.0                         # Azure OpenAI LLM
+
+# ── GCP / GCS / Dataproc ─────────────────────────────────────────────────────
+google-cloud-storage>=2.16.0           # GCS storage
+google-auth>=2.29.0                    # GCP authentication
+
+# ── Databricks ────────────────────────────────────────────────────────────────
+databricks-connect>=14.0.0             # Databricks remote Spark
+# OR use: databricks-sdk>=0.20.0 for Databricks REST API access
+
+# ── PySpark (if not already installed) ───────────────────────────────────────
+pyspark>=3.5.0
