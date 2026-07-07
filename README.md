@@ -77,30 +77,103 @@ Excel files   ─┘  detection        Phase 4 Models    DEV→PROD Promotion   
 
 ## 3. Quick Start — Local
 
-### Prerequisites
+### Step 1 — Install prerequisites
 
-- Python 3.11+
-- Java 17+ (for PySpark — only needed if running the pipeline, not just the dashboard)
+**Python 3.11+**
+Download from [python.org/downloads](https://python.org/downloads) and run the installer.
+On Windows, tick **"Add Python to PATH"** during installation.
+
+**Java 17** (required for PySpark — the data processing engine)
+
+- Windows: Download [Eclipse Temurin 17](https://adoptium.net/) and run the installer
+- Mac: `brew install openjdk@17`
+- Linux (Ubuntu): `sudo apt install openjdk-17-jdk`
+
+After installing Java on Windows, set the environment variable:
+```powershell
+# Run this in PowerShell (replace the path with where Java installed)
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.x-hotspot"
+```
+
+**Git** (to download the project)
+Download from [git-scm.com/download](https://git-scm.com/download) and run the installer.
+
+---
+
+### Step 2 — Download the project
 
 ```bash
-# 1. Clone / enter the project directory
-cd customer-recommendation-segmentation
+git clone https://github.com/Shreyanbh/trade-promo-optimization.git
+cd trade-promo-optimization
+```
 
-# 2. Install base dependencies
+Or click the green **Code** button on GitHub → **Download ZIP** → extract it.
+
+---
+
+### Step 3 — Install Python dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
-# 3. Copy and fill in your API key
+This installs everything the project needs (pandas, PySpark, Streamlit, scikit-learn, etc.).
+
+---
+
+### Step 4 — Add your API key
+
+You need a free Anthropic API key from [console.anthropic.com](https://console.anthropic.com).
+
+**On Mac / Linux:**
+```bash
 cp .env.example .env
-# Edit .env: set ANTHROPIC_API_KEY=sk-ant-...
+```
 
-# 4. Run the pipeline (generates synthetic data automatically if no sources.yaml is set up)
+**On Windows:**
+```powershell
+copy .env.example .env
+```
+
+Then open the `.env` file in Notepad and set:
+```
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+```
+
+---
+
+### Step 5 — Run the pipeline
+
+```bash
 python -m src.run_all.pipeline_runner
+```
 
-# 5. Launch the dashboard
+This runs all 5 phases automatically using built-in synthetic data — no real data needed to try it out. Takes 5–10 minutes on a laptop.
+
+---
+
+### Step 6 — Open the dashboard
+
+```bash
 streamlit run dashboard/app.py
 ```
 
-The dashboard opens at **http://localhost:8501**.
+Your browser will open automatically at **http://localhost:8501**
+
+---
+
+## 3b. Deploy Online — Streamlit Cloud (Free, No Installation for Users)
+
+If you want to share the dashboard so others can access it in a browser without installing anything:
+
+1. Go to **[share.streamlit.io](https://share.streamlit.io)** and sign in with GitHub
+2. Click **New app**
+3. Select your repository: `Shreyanbh/trade-promo-optimization`
+4. Set **Main file path** to: `dashboard/app.py`
+5. Click **Advanced settings** → add your `ANTHROPIC_API_KEY` as a secret
+6. Click **Deploy**
+
+Streamlit gives you a public URL (e.g. `https://shreyanbh-trade-promo.streamlit.app`) that anyone can open — no Python, no installation, no setup required on their end.
 
 ---
 
